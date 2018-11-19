@@ -4,8 +4,8 @@ import secrets
 import binascii
 from typing import Dict
 
-from .ecdsa import SigningKey
-from .ecdsa.util import PRNG
+from pythereum.ecdsa import SigningKey
+from pythereum.ecdsa.util import PRNG
 
 
 def create_wallet(*seed) -> Dict[str, str]:
@@ -28,7 +28,16 @@ def create_wallet(*seed) -> Dict[str, str]:
             "address": address}
 
 
-def sign(private_key, item):
+def sign_item(private_key, item):
     private_key = SigningKey.from_pem(private_key)
     signed_item = private_key.sign_deterministic(item.encode())
     return binascii.b2a_base64(signed_item, newline=False).decode("utf-8")
+
+
+def verify_signature(public_key, item):
+    pass
+
+
+def verify_address(public_key, address):
+    pass
+
