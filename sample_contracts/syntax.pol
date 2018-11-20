@@ -1,0 +1,8 @@
+def main():
+    # The entering function must be named 'main'
+    # Your code goes here
+
+    # Always return state(),printed
+    # This will update and keep track of the new state of function
+    # at next run
+    return state(), printed

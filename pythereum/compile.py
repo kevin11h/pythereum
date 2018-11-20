@@ -75,12 +75,13 @@ class CompileContract:
         if isinstance(log, str):
             self.__emit_log.append(log)
 
-    def emits(self):
-        return self.__emit_log
-
     @property
     def state_variables(self):
         return self.__state_vars
+
+    @property
+    def emits(self):
+        return self.__emit_log
 
     @property
     def byte_code(self):
@@ -91,10 +92,10 @@ class CompileContract:
         queue.put(result)
         queue.close()
 
-    def call_function(self, name, *args):
-        if name in self.__locals:
+    def run(self, *args):
+        if "main" in self.__locals and callable(self.__locals["main"]):
             queue = multiprocessing.Queue(2)
-            proc = multiprocessing.Process(target=self.__wrapper, args=(queue, self.__locals[name], *args))
+            proc = multiprocessing.Process(target=self.__wrapper, args=(queue, self.__locals["main"], *args))
             proc.start()
             try:
                 ret = queue.get(True, 2)

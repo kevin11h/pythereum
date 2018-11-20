@@ -1,0 +1,9 @@
+def main():
+    answer = square(5)
+    print(answer)
+    
+    return state(), printed
+
+def square(x):
+    return x**2
+

@@ -1,0 +1,4 @@
+def main(x):
+	for i in range(x):
+		print(x)
+	return state(), printed

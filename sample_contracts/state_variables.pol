@@ -1,0 +1,10 @@
+name = "Bob"
+id = 5
+
+def main(cname, cid):
+	if cname == name and cid == id:
+		print("Hi bob!")
+	else:
+		print("No bob :/")
+
+	return state(), printed

@@ -1,0 +1,33 @@
+student_id = 100600000
+students = {}
+
+def main(name):
+	if not sender:
+		print("Sender did not identify themselves!")
+		return state(), printed
+
+	print("This contract is being called by " + sender)
+	if sender != owner:
+		print("This contract can only be called by its owner")
+		return state(), printed
+
+	print("Adding a new student")
+	
+	stid = add_student(name)
+	update_state(stid, students)
+
+	print("Added new student: " + name)
+
+	return state(), printed
+
+def add_student(name):
+	new_id = student_id + 1
+	students[new_id] = name
+
+	return new_id
+
+def update_state(std_id, stds):
+	state("student_id", std_id)
+	state("students", stds)
+
+
