@@ -54,8 +54,8 @@ Written in 2005 by Peter Pearson and placed in the public domain.
 """
 
 from six import int2byte, b
-from . import ellipticcurve
-from . import numbertheory
+from pythereum.ecdsa import ellipticcurve
+from pythereum.ecdsa import numbertheory
 
 
 class RSZeroError(RuntimeError):

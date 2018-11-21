@@ -17,12 +17,12 @@ import string
 
 
 utility_builtins = {}
-allowed_functions = {
+allowed_custom_builtin_functions = {
     "sqrt": math.sqrt,
     "ceil": math.ceil,
     "floor": math.floor,
     "factorial": math.factorial,
-    "gcd": math.gcd,   
+    "gcd": math.gcd,
     "log": math.log,
     "pow": math.pow,
     "sin": math.sin,

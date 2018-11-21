@@ -1,6 +1,7 @@
 import multiprocessing
 
-from pythereum.restricted_python import safe_globals, compile_restricted, allowed_functions
+from pythereum.restricted_python import compile_restricted
+from pythereum.restricted_python import safe_globals, limited_builtins, allowed_custom_builtin_functions
 from pythereum.restricted_python.Guards import guarded_iter_unpack_sequence
 from pythereum.restricted_python.Eval import default_guarded_getiter
 from pythereum.restricted_python.PrintCollector import PrintCollector
@@ -11,8 +12,11 @@ class CompileContract:
         # Allow basic (but safe) python functionality
         self.__globals = safe_globals.copy()
 
+        # Limit usage of range function, list / tuple casting
+        self.__globals["__builtins__"].update(limited_builtins)
+
         # Allow specific module functions outside of regular builtins
-        self.__globals["__builtins__"].update(allowed_functions)
+        self.__globals["__builtins__"].update(allowed_custom_builtin_functions)
 
         # Allow safe usage of 'for' loops
         self.__globals["__builtins__"]["_getiter_"] = default_guarded_getiter

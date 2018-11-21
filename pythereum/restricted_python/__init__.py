@@ -30,7 +30,7 @@ from pythereum.restricted_python.Guards import safe_builtins  # isort:skip
 from pythereum.restricted_python.Guards import safe_globals  # isort:skip
 from pythereum.restricted_python.Limits import limited_builtins  # isort:skip
 from pythereum.restricted_python.Utilities import utility_builtins  # isort:skip
-from pythereum.restricted_python.Utilities import allowed_functions # Custom dict
+from pythereum.restricted_python.Utilities import allowed_custom_builtin_functions  # Custom dict
 
 # Helper Methods
 from pythereum.restricted_python.PrintCollector import PrintCollector  # isort:skip

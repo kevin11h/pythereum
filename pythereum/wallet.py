@@ -11,7 +11,7 @@ SEED_WORD_COUNT = 24
 ROOT_DIR = Path(os.path.dirname(__file__))
 
 
-def create_wallet(*seed: str) -> Dict[str, str]:
+def generate_wallet(*seed: str) -> Dict[str, str]:
     """
     Creates the key pair of a wallet. Converts the public key to an address.
     If seed is not passed, random words are picked from a wordlist.

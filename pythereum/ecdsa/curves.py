@@ -1,6 +1,6 @@
 from __future__ import division
 
-from . import der, ecdsa
+from pythereum.ecdsa import der, ecdsa
 
 
 class UnknownCurveError(Exception):

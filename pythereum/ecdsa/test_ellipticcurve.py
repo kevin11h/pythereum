@@ -1,8 +1,8 @@
-from .ellipticcurve import CurveFp, INFINITY, Point
+from pythereum.ecdsa.ellipticcurve import CurveFp, INFINITY, Point
 from six import print_
 
-def test_ellipticcurve():
 
+def test_ellipticcurve():
   class FailedTest(Exception):
     pass
 

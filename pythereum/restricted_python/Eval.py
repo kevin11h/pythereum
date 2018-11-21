@@ -12,8 +12,8 @@
 ##############################################################################
 """Restricted Python Expressions."""
 
-from ._compat import IS_PY2
-from .compile import compile_restricted_eval
+from pythereum.restricted_python._compat import IS_PY2
+from pythereum.restricted_python.compile import compile_restricted_eval
 
 import ast
 
