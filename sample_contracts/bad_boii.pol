@@ -1,0 +1,17 @@
+# This will fail
+import os
+
+# So will this
+from os import listdir
+
+# And this
+exec("print('hello')")
+
+# Opens get closed faster than you can blink
+f = open("/etc/passwd")
+
+def main():
+	# Congratulations, you played yourself
+	print(eval('1+1'))
+	
+	return state(),printed

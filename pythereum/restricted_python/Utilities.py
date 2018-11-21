@@ -17,6 +17,29 @@ import string
 
 
 utility_builtins = {}
+allowed_functions = {
+    "sqrt": math.sqrt,
+    "ceil": math.ceil,
+    "floor": math.floor,
+    "factorial": math.factorial,
+    "gcd": math.gcd,   
+    "log": math.log,
+    "pow": math.pow,
+    "sin": math.sin,
+    "asin": math.asin,
+    "cos": math.cos,
+    "acos": math.acos,
+    "tan": math.tan,
+    "atan": math.atan,
+    "pi": math.pi,
+    "random": random.random,
+    "randint": random.randint,
+    "randrange": random.randrange,
+    "choice": random.choice,
+    "choices": random.choices,
+    "shuffle": random.shuffle,
+    "sample": random.sample
+}
 
 utility_builtins['string'] = string
 utility_builtins['math'] = math

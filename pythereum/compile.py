@@ -1,9 +1,9 @@
 import multiprocessing
 
-from pythereum.restricted_python import safe_globals, compile_restricted, utility_builtins
+from pythereum.restricted_python import safe_globals, compile_restricted, allowed_functions
 from pythereum.restricted_python.Guards import guarded_iter_unpack_sequence
 from pythereum.restricted_python.Eval import default_guarded_getiter
-from pythereum.restricted_python.PrintCollector import  PrintCollector
+from pythereum.restricted_python.PrintCollector import PrintCollector
 
 
 class CompileContract:
@@ -11,9 +11,8 @@ class CompileContract:
         # Allow basic (but safe) python functionality
         self.__globals = safe_globals.copy()
 
-        # Allow 'import' of safe utility functions
-        self.__globals["__builtins__"]["__import__"] = __import__
-        self.__globals["__builtins__"].update(utility_builtins)
+        # Allow specific module functions outside of regular builtins
+        self.__globals["__builtins__"].update(allowed_functions)
 
         # Allow safe usage of 'for' loops
         self.__globals["__builtins__"]["_getiter_"] = default_guarded_getiter
@@ -87,7 +86,8 @@ class CompileContract:
     def byte_code(self):
         return self.__byte_code.co_code
 
-    def __wrapper(self, queue, func, *args):
+    @staticmethod
+    def __wrapper(queue, func, *args):
         result = func(*args)
         queue.put(result)
         queue.close()
@@ -112,6 +112,7 @@ class CompileContract:
             if emits:
                 self.__emit_log.extend(list(filter(None, emits.split("\n"))))
         return None
+        pass
 
     def jsonify(self):
         return {

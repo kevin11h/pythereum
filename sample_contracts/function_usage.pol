@@ -1,0 +1,12 @@
+def main():
+	print(sqrt(16))
+	print(factorial(5))
+	print(random())
+
+	s = [1,2,3]
+	print(choice(s))
+
+	print(sin(90))
+
+	return state(), printed
+
