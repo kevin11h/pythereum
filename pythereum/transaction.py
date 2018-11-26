@@ -80,7 +80,7 @@ class Transaction:
         return {
             "from": self.__from,
             "to": self.__to,
-            "time": str(self.__time),
+            "time": self.__time,
             "signature": self.__signature,
             "amount": str(self.__amount),
             "txid": self.txid,
@@ -90,7 +90,7 @@ class Transaction:
 
 class Contract:
     def __init__(self, code, t_from, signature):
-        self.__time = str(time.time())
+        self.__time = time.time()
         self.__code = str(code)
         self.__from = str(t_from)
         self.__signature = str(signature)
@@ -131,7 +131,7 @@ class Message:
         self.__signature = str(signature)
         self.__data = data,
         self.__gas = int(gas),
-        self.__time = str(time.time())
+        self.__time = time.time()
 
         assert verify_signature(signature=signature, item=str(data), public_key=t_from), \
             "Invalid Signature"
