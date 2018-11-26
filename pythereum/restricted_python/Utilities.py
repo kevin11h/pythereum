@@ -11,7 +11,9 @@
 #
 ##############################################################################
 
+import time
 import math
+import hashlib
 import random
 import string
 
@@ -38,7 +40,9 @@ allowed_custom_builtin_functions = {
     "choice": random.choice,
     "choices": random.choices,
     "shuffle": random.shuffle,
-    "sample": random.sample
+    "sample": random.sample,
+    "time": time.time,
+    "sha256": hashlib.sha256
 }
 
 utility_builtins['string'] = string

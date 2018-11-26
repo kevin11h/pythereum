@@ -26,8 +26,8 @@ class CompileContract:
         self.__state_vars = {}
 
         # Allow access to sender and data class
-        self.__globals["__builtins__"]["sender"] = sender
-        self.__globals["__builtins__"]["data"] = data
+        self.__globals["__builtins__"]["msg_sender"] = sender
+        self.__globals["__builtins__"]["msg_data"] = data
 
         # Allow updating of state variables
         self.__globals["__builtins__"]["state"] = self.update_state_var
@@ -111,12 +111,13 @@ class CompileContract:
                 return None
             new_state, emits = ret
             for var_name, var_value in new_state.items():
+                if var_name not in self.__state_vars.keys():
+                    continue
                 self.__state_vars[var_name] = var_value
                 self.__globals["__builtins__"][var_name] = var_value
             if emits:
                 self.__emit_log.extend(list(filter(None, emits.split("\n"))))
         return None
-        pass
 
     def jsonify(self):
         return {
@@ -124,3 +125,8 @@ class CompileContract:
             "state_vars": self.__state_vars,
             "emits": self.__emit_log
         }
+
+
+class Contract:
+    def __init__(self, code):
+        pass

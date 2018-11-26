@@ -34,4 +34,5 @@ The following custom builtins are available:
     choices     |       random.choices
     shuffle     |       random.shuffle
     sample      |       random.sample
-
+     time       |         time.time (UNIX EPOCH)
+    sha256      |       hashlib.sha256
