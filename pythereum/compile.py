@@ -8,7 +8,7 @@ from pythereum.restricted_python.PrintCollector import PrintCollector
 
 
 class CompileContract:
-    def __init__(self, code, state_vars=None, *, sender=None, data=None):
+    def __init__(self, code, state_vars=None, *, sender=None):
         # Allow basic (but safe) python functionality
         self.__globals = safe_globals.copy()
 
@@ -25,9 +25,8 @@ class CompileContract:
         # Pass state information
         self.__state_vars = {}
 
-        # Allow access to sender and data class
+        # Allow access to contract caller public key
         self.__globals["__builtins__"]["msg_sender"] = sender
-        self.__globals["__builtins__"]["msg_data"] = data
 
         # Allow updating of state variables
         self.__globals["__builtins__"]["state"] = self.update_state_var
@@ -96,13 +95,13 @@ class CompileContract:
         queue.put(result)
         queue.close()
 
-    def run(self, *args):
+    def run(self, runtime, *args):
         if "main" in self.__locals and callable(self.__locals["main"]):
             queue = multiprocessing.Queue(2)
             proc = multiprocessing.Process(target=self.__wrapper, args=(queue, self.__locals["main"], *args))
             proc.start()
             try:
-                ret = queue.get(True, 2)
+                ret = queue.get(True, runtime)
             except:
                 ret = None
             finally:
@@ -125,8 +124,3 @@ class CompileContract:
             "state_vars": self.__state_vars,
             "emits": self.__emit_log
         }
-
-
-class Contract:
-    def __init__(self, code):
-        pass

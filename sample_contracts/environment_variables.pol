@@ -1,0 +1,12 @@
+owner = msg_sender
+
+def main():
+	assert is_owner()
+
+	print("Hello Owner")
+
+	return state(), printed
+
+
+def is_owner():
+	return sender == owner
