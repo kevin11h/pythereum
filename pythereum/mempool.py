@@ -8,6 +8,7 @@ class Mempool:
     messages = {}
 
     @classmethod
+    # Add transaction to transaction dictionary
     def add_transaction(cls, transaction):
         if not isinstance(transaction, (dict, list)):
             transaction = transaction.jsonify()
@@ -17,7 +18,9 @@ class Mempool:
             cls.transactions[transaction[0]["txid"]] = transaction[0]
             cls.transactions[transaction[1]["txid"]] = transaction[1]
 
+            
     @classmethod
+    # Add contract to contracts dictionary
     def add_contract(cls, contract):
         if isinstance(contract, dict):
             cls.contracts[contract["cxid"]] = contract
@@ -25,6 +28,7 @@ class Mempool:
             cls.transactions[contract.cxid] = contract.jsonify()
 
     @classmethod
+    # Add message to messages dictionary
     def add_message(cls, message):
         if isinstance(message, dict):
             cls.messages[message["mxid"]] = message
@@ -32,6 +36,7 @@ class Mempool:
             cls.messages[message.mxid] = message.jsonify()
 
     @classmethod
+    # Pop transactions from transactions dictionary
     def pop_transactions(cls, n=5):
         for txid, tx in cls.transactions.items():
             if time.time() - tx["time"] > 300:
@@ -47,6 +52,7 @@ class Mempool:
         return txs
 
     @classmethod
+    # Pop contracts from contracts dictionary
     def pop_contracts(cls, n=5):
         for cxid, cx in cls.contracts.items():
             if time.time() - cx["time"] > 300:
@@ -62,6 +68,7 @@ class Mempool:
         return cxs
 
     @classmethod
+    # Pop messages from messages dictionary
     def pop_messages(cls, n=5):
         for mxid, mx in cls.messages.items():
             if time.time() - mx["time"] > 300:
