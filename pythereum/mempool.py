@@ -9,10 +9,13 @@ class Mempool:
 
     @classmethod
     def add_transaction(cls, transaction):
+        if not isinstance(transaction, (dict, list)):
+            transaction = transaction.jsonify()
         if isinstance(transaction, dict):
             cls.transactions[transaction["txid"]] = transaction
-        else:
-            cls.transactions[transaction.txid] = transaction.jsonify()
+        elif isinstance(transaction, list):
+            cls.transactions[transaction[0]["txid"]] = transaction[0]
+            cls.transactions[transaction[1]["txid"]] = transaction[1]
 
     @classmethod
     def add_contract(cls, contract):

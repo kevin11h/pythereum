@@ -11,15 +11,19 @@ class Transaction:
     message / notes.
     """
 
-    def __init__(self, t_from, t_to, value, signature, input_txids, *, data=None, change_address=None):
+    def __init__(self, t_from, t_to, value, signature, input_txids, txid_amount, *, data=None, change_address=None):
         self.__from = str(t_from)
         self.__to = str(t_to)
         self.__amount = float(value)
         self.__data = str(data)
         self.__signature = str(signature)
+        self.__txid_amount = float(txid_amount)
 
+        assert self.__txid_amount >= self.__amount, "Insufficient funds to create transaction"
         assert verify_signature(signature=self.__signature, item=f"{value}{t_from}", public_key=self.__from), \
             "Invalid Signature"
+
+        self.__need_change = self.__amount != self.__txid_amount
 
         self.__time = None
         self.__change_address = change_address or t_from
@@ -31,13 +35,9 @@ class Transaction:
         else:
             self.__input_txids = []
 
-        self.__is_ready = False
-
-        self.__txid = None
-
-    def add_input_txid(self, txid):
-        if not self.is_ready:
-            self.__input_txids.append(txid)
+        self.__txid = hashlib.sha256(f"{self.__from}{self.__to}{self.__amount}{''.join(self.__input_txids)}".encode()
+                                     ).hexdigest()
+        self.__time = time.time()
 
     @property
     def txid(self):
@@ -64,28 +64,37 @@ class Transaction:
         return self.__input_txids
 
     @property
-    def is_ready(self):
-        return self.__is_ready
-
-    def make_ready(self):
-        assert self.input_txids, "No input transaction ids added"
-        self.__txid = hashlib.sha256(f"{self.__from}{self.__to}{self.__amount}{''.join(self.__input_txids)}".encode()
-                                     ).hexdigest()
-        self.__time = time.time()
-        self.__is_ready = True
+    def has_change(self):
+        return self.__need_change
 
     def jsonify(self):
-        if not self.is_ready:
-            return None
         return {
             "from": self.__from,
             "to": self.__to,
             "time": self.__time,
             "signature": self.__signature,
-            "amount": str(self.__amount),
+            "amount": self.__amount,
             "txid": self.txid,
             "input_txids": self.input_txids
-        }
+        } if not self.__need_change else [{
+            "from": self.__from,
+            "to": self.__to,
+            "time": self.__time,
+            "signature": self.__signature,
+            "amount": self.__txid_amount,
+            "txid": self.txid,
+            "input_txids": self.__input_txids
+        }, {
+            "from": self.__to,
+            "to": self.__change_address,
+            "change_from": self.__txid,
+            "amount": self.__txid_amount - self.__amount,
+            "time": self.__time,
+            "signature": None,
+            "txid": hashlib.sha256(f"{self.__to}{self.__change_address}{self.__txid_amount - self.__amount}"
+                                   f"{self.__time}{self.txid}".encode()).hexdigest(),
+            "input_txids": None
+        }]
 
 
 class Contract:
