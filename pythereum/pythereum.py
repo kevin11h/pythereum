@@ -2,7 +2,7 @@ import time
 import secrets
 import hashlib
 
-from pythereum.block import Block
+from pythereum.block import Block, MerkleTree
 from pythereum.mempool import Mempool
 from pythereum.compile import CompileContract
 from pythereum.transaction import Transaction, Contract, Message
@@ -247,3 +247,52 @@ class Pythereum:
 
         self.__chain.append(block.jsonify())
         return block.jsonify()
+
+    def verify_chain(self):
+        for i, block in enumerate(self.__chain[::-1]):
+            header = block["header"]
+            merkle_roots = header["merkle_root"]
+
+            if header["block_number"] != len(self.__chain) - i - 1:
+                return {"result": False, "message": f"Inconsistent block numbering. Expected "
+                                                    f"#{len(self.__chain) - i - 1} "
+                                                    f"for block with hash {block['block_hash']} but "
+                                                    f"got #{header['block_number']}"}
+            if not header["block_number"]:
+                continue
+            
+            if block["block_hash"] != hashlib.sha256(
+                    f"{header['block_number']}{header['block_time']}{header['block_nonce']}"
+                    f"{header['previous_block_hash']}{merkle_roots['transactions']}{merkle_roots['contracts']}"
+                    f"{merkle_roots['messages']}".encode()
+            ).hexdigest():
+                return {"result": False, "message": f"Block#{block['header']['block_number']} has incorrect hash"}
+
+            prev_block = self.get_block(header["previous_block_hash"])
+            if prev_block["header"]["block_number"] != header["block_number"] - 1:
+                return {"result": False, "message": f"Block#{header['block_number']} with hash {block['block_hash']} "
+                                                    f"points back to an invalid block"}
+
+            if merkle_roots["transactions"]:
+                m_tx = MerkleTree(*list(block["data"]["transactions"].keys()))
+                m_tx.make_tree()
+                if merkle_roots["transactions"] != m_tx.root:
+                    return {"result": False, "message": f"Block#{header['block_number']} with hash "
+                                                        f"{block['block_hash']} has invalid transaction merkle root."
+                                                        f"Expected {m_tx.root}, got {merkle_roots['transactions']}"}
+            if merkle_roots["contracts"]:
+                m_cx = MerkleTree(*list(block["data"]["contracts"].keys()))
+                m_cx.make_tree()
+                if merkle_roots["contracts"] != m_cx.root:
+                    return {"result": False, "message": f"Block#{header['block_number']} with hash "
+                                                        f"{block['block_hash']} has invalid contract merkle root."
+                                                        f"Expected {m_cx.root}, got {merkle_roots['contracts']}"}
+            if merkle_roots["messages"]:
+                m_mx = MerkleTree(*list(block["data"]["messages"].keys()))
+                m_mx.make_tree()
+                if merkle_roots["messages"] != m_mx.root:
+                    return {"result": False, "message": f"Block#{header['block_number']} with hash "
+                                                        f"{block['block_hash']} has invalid message merkle root."
+                                                        f"Expected {m_mx.root}, got {merkle_roots['messages']}"}
+
+        return {"result": True, "message": "Blocks are valid and consistent"}
