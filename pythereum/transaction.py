@@ -112,10 +112,10 @@ class Message:
 
     def __init__(self, t_from, t_to, signature, data, gas):
         self.__from = str(t_from)
-        self.__to = str(t_to),
+        self.__to = t_to
         self.__signature = str(signature)
-        self.__data = data,
-        self.__gas = int(gas),
+        self.__data = data
+        self.__gas = int(gas)
         self.__time = time.time()
 
         assert verify_signature(signature=signature, item=str(data), public_key=t_from), \
@@ -133,6 +133,7 @@ class Message:
             "to": self.__to,
             "time": self.__time,
             "gas": self.__gas,
+            "mxid": self.__mxid,
             "data": {
                 "args": self.__data,
                 "reply": None

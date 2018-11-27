@@ -10,13 +10,9 @@ class Mempool:
     # Add transaction to transaction dictionary
     @classmethod
     def add_transaction(cls, transaction):
-        if not isinstance(transaction, (dict, list)):
+        if not isinstance(transaction, dict):
             transaction = transaction.jsonify()
-        if isinstance(transaction, dict):
-            cls.transactions[transaction["txid"]] = transaction
-        elif isinstance(transaction, list):
-            cls.transactions[transaction[0]["txid"]] = transaction[0]
-            cls.transactions[transaction[1]["txid"]] = transaction[1]
+        cls.transactions[transaction["txid"]] = transaction
 
     # Add contract to contracts dictionary
     @classmethod
@@ -57,7 +53,7 @@ class Mempool:
             if time.time() - cx["time"] > 300:
                 del cls.contracts[cxid]
 
-        n = min(len(cls.transactions), n, 10)
+        n = min(len(cls.contracts), n, 10)
         s_cx = random.sample(cls.contracts.keys(), n)
 
         cxs = []
@@ -73,11 +69,11 @@ class Mempool:
             if time.time() - mx["time"] > 300:
                 del cls.messages[mxid]
 
-        n = min(len(cls.transactions), n, 10)
+        n = min(len(cls.messages), n, 10)
         s_mx = random.sample(cls.messages.keys(), n)
 
         mxs = []
         for mxid in s_mx:
             mxs.append(cls.messages[mxid])
-            del cls.contracts[mxid]
+            del cls.messages[mxid]
         return mxs

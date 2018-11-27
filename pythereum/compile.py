@@ -97,6 +97,8 @@ class CompileContract:
 
     def run(self, runtime, *args):
         if "main" in self.__locals and callable(self.__locals["main"]):
+            if len(args) == 1 and args[0] is None:
+                args = []
             queue = multiprocessing.Queue(2)
             proc = multiprocessing.Process(target=self.__wrapper, args=(queue, self.__locals["main"], *args))
             proc.start()

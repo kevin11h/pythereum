@@ -28,6 +28,20 @@ class Pythereum:
 
         self.__mempool = Mempool
 
+    @property
+    def top_block(self):
+        if self.__chain:
+            return self.__chain[-1]
+        return None
+
+    @property
+    def blocks(self):
+        return self.__chain or None
+
+    @property
+    def difficulty(self):
+        return self.__difficulty
+
     def send_pth(self, t_from, t_to, value, private_key, *, data=None):
         value = float(value)
 
@@ -72,10 +86,8 @@ class Pythereum:
             for _, tx in block["data"]["transactions"].items():
                 if tx["to"] == public_key:
                     balance += tx["amount"]
-                    print(public_key, balance)
                 elif tx["from"] == public_key:
                     balance -= tx["amount"]
-                    print(public_key, balance)
         return balance
 
     def get_utxo(self, public_key):
@@ -92,20 +104,32 @@ class Pythereum:
 
     def get_contract(self, cxid):
         for block in self.__chain[::-1]:
-            for ccxid, cx in block["data"]["contracts"].items():
-                if ccxid == cxid:
-                    return cxid
+            if block["data"]["contracts"]:
+                for ccxid, cx in block["data"]["contracts"].items():
+                    if ccxid == cxid:
+                        return cx
         return None
 
     def get_contract_state(self, cxid):
         for block in self.__chain[::-1]:
-            for mxid, mx in block["data"]["messages"].items():
-                if mx["to"] == cxid:
-                    return mx["data"]["reply"]
-            for ccxid, cx in block["data"]["contracts"].items():
-                if ccxid == cxid:
-                    return cx["state"]["state_vars"]
+            if block["data"]["messages"]:
+                for mxid, mx in block["data"]["messages"].items():
+                    if mx["to"] == cxid:
+                        return mx["data"]["reply"]["state_vars"]
+            if block["data"]["contracts"]:
+                for ccxid, cx in block["data"]["contracts"].items():
+                    if ccxid == cxid:
+                        return cx["state"]["state_vars"]
         return None
+
+    def get_all_emits(self, cxid, list_only=False):
+        emits = {}
+        for block in self.__chain[::-1]:
+            if block["data"]["messages"]:
+                for mxid, mx in block["data"]["messages"].items():
+                    if mx["to"] == cxid:
+                        emits[mxid] = mx["data"]["reply"]["emits"]
+        return emits if not list_only else list(emits.values())
 
     def get_block(self, block_id):
         if isinstance(block_id, int):
@@ -133,10 +157,12 @@ class Pythereum:
         runtime = (gas // 1000) * 0.1  # get 100 ms for every 1000 gas sent
         if not isinstance(data, list):
             data = [data]
-        ret_val = compiled_contract.run(runtime, *data)
+        compiled_contract.run(runtime, *data)
+        state = compiled_contract.jsonify()
+        del state["code"]
 
         message_json = message.jsonify()
-        message_json["reply"] = ret_val or contract_state
+        message_json["data"]["reply"] = state
 
         self.__mempool.add_message(message_json)
 

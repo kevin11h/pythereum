@@ -90,6 +90,9 @@ class Block:
         if contracts:
             if not isinstance(contracts, list):
                 contracts = [contracts]
+            for i, cx in enumerate(contracts):
+                if isinstance(cx, Contract):
+                    contracts[i] = cx.jsonify()
             self.__contracts = {}
             for cx in contracts:
                 self.__contracts[cx["cxid"]] = cx
