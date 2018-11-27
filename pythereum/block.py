@@ -61,64 +61,22 @@ class MerkleTree:
             self.ready = True
 
 
-"""
-{
-    "number": 1
-    "time": 1234,
-    "nonce": "asdf",
-    "previous_block_hash": "asdf",
-    "merkle_root": {
-        "transactions": "asdf",
-        "contracts": "asdf",
-        "messages": "asdf"
-    },
-    "data": {
-        "transactions": {
-            "txid": {txinfo},
-            "txid2": {tx2info}
-        },
-        "contracts": {
-            "cxid": {
-                "code": "asdf"
-            }
-        },
-        "messages": {
-            "mxid": {
-                "from": "public_key",
-                "to": "public_key",
-                "data": "Hello World" 
-            },
-            "mxid2": {
-                "from": "public_key",
-                "to": "contract_address",
-                "data": {
-                    "args": ["arg1", "arg2"],
-                    "reply": {
-                        "state_vars": {all_state_vars},
-                        "emits": ["Log of all emits"]
-                    }
-                }
-            }
-        }
-    }
-}
-"""
-
-
 class Block:
     def __init__(self, *, block_number, block_nonce, previous_block_hash,
                  transactions: List[Transaction]=None,
                  contracts: List[Contract]=None,
                  messages: List[Message]=None):
         self.__number = int(block_number)
-        self.__time = str(time.time())
+        self.__time = time.time()
         self.__nonce = str(block_nonce)
         self.__previous_block_hash = previous_block_hash
 
         if transactions:
             if not isinstance(transactions, list):
                 transactions = [transactions]
-            transactions = [tx.jsonify() for tx in transactions if isinstance(tx, Transaction)]
+            for i, tx in enumerate(transactions):
+                if isinstance(tx, Transaction):
+                    transactions[i] = tx.jsonify()
             self.__transactions = {}
             for tx in transactions:
                 self.__transactions[tx["txid"]] = tx
@@ -132,7 +90,6 @@ class Block:
         if contracts:
             if not isinstance(contracts, list):
                 contracts = [contracts]
-            contracts = [cx.jsonify() for cx in contracts if isinstance(cx, Contract)]
             self.__contracts = {}
             for cx in contracts:
                 self.__contracts[cx["cxid"]] = cx
@@ -146,7 +103,6 @@ class Block:
         if messages:
             if not isinstance(messages, list):
                 messages = [messages]
-            messages = [mx.jsonify() for mx in messages if isinstance(mx, Message)]
             self.__messages = {}
             for mx in messages:
                 self.__messages[mx["mxid"]] = mx
@@ -169,13 +125,16 @@ class Block:
     def time(self):
         return self.__time
 
+    def update_time(self):
+        self.__time = time.time()
+
     @property
     def nonce(self):
         return self.__nonce
 
     @nonce.setter
     def nonce(self, nonce):
-        assert isinstance(nonce, str) and len(nonce) == 16, f"Invalid nonce {nonce}"
+        assert isinstance(nonce, str) and len(nonce) == 32, f"Invalid nonce {nonce}, {len(nonce)}"
         self.__nonce = nonce
 
     @property
@@ -197,6 +156,11 @@ class Block:
     @property
     def hash(self):
         return self.__block_hash
+
+    def update_hash(self):
+        self.__block_hash = hashlib.sha256(
+            f"{self.number}{self.time}{self.nonce}{self.previous_block_hash}".encode()
+        ).hexdigest()
 
     def merkle_root(self, mtype):
         if mtype == "transactions":

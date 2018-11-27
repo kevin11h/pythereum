@@ -1,9 +1,16 @@
+import time
 import secrets
+import hashlib
 
 from pythereum.block import Block
 from pythereum.mempool import Mempool
+from pythereum.compile import CompileContract
 from pythereum.transaction import Transaction, Contract, Message
-from pythereum.wallet import verify_key_pair, sign_item, verify_signature
+from pythereum.wallet import sign_item
+
+
+class BadTransactionError(Exception):
+    pass
 
 
 class Pythereum:
@@ -14,20 +21,18 @@ class Pythereum:
                                           t_to="luPzDifFO0PBHx9MoVrEuBDuJ3DPvBdWm4PTeltKMewt6HG7gkwqyWcRULb5l37Y",
                                           signature="0FAB5A6X8h7amAkjiuz5IbQUdKdNUQmvDDW50/hXrFykg6BYbzcJ4Ar9s2v1B09z",
                                           input_txids="null",
-                                          value=1000000000000,
-                                          txid_amount=1000000000000)
-        self.__chain = [Block(block_number=1, block_nonce=secrets.token_hex(16),
+                                          value=1000000000000)
+        self.__chain = [Block(block_number=0, block_nonce=secrets.token_hex(16),
                               previous_block_hash=None,
                               transactions=[genesis_transaction]).jsonify()]
 
         self.__mempool = Mempool
 
-    def send_pth(self, t_from, t_to, value, private_key, *, data=None, change_address=None):
-        assert t_from != t_to, "Cannot send PTH to yourself"
-        assert verify_key_pair(t_from, private_key), "Invalid key pair (t_from / private_key)"
-        assert self.get_balance(t_from) > value, f"Not enough balance to send {value} PTH"
-
+    def send_pth(self, t_from, t_to, value, private_key, *, data=None):
         value = float(value)
+
+        assert t_from != t_to, "Cannot send PTH to yourself"
+        assert self.get_balance(t_from) >= value, f"Not enough balance to send {value} PTH"
 
         utxos = self.get_utxo(t_from)
         txs = []
@@ -37,25 +42,21 @@ class Pythereum:
                     txs.append(tx)
 
         utxos = []
-        tx_total = 0
         value_left = value
         for tx in txs:
             if tx["amount"] > value:
                 utxos = [tx["txid"]]
-                tx_total = tx["amount"]
                 break
             elif value_left - tx["amount"] <= 0:
                 utxos.append(tx["txid"])
-                tx_total += tx["amount"]
                 break
             else:
                 utxos.append(tx["txid"])
                 value_left -= tx["amount"]
-                tx_total += tx["amount"]
 
         signature = sign_item(private_key, f"{value}{t_from}")
         tx = Transaction(t_from=t_from, t_to=t_to, value=value, signature=signature, input_txids=utxos,
-                         txid_amount=tx_total, data=data, change_address=change_address)
+                         data=data)
         self.__mempool.add_transaction(tx)
 
     def get_transaction(self, txid):
@@ -71,8 +72,10 @@ class Pythereum:
             for _, tx in block["data"]["transactions"].items():
                 if tx["to"] == public_key:
                     balance += tx["amount"]
+                    print(public_key, balance)
                 elif tx["from"] == public_key:
-                    balance -= tx["value"]
+                    balance -= tx["amount"]
+                    print(public_key, balance)
         return balance
 
     def get_utxo(self, public_key):
@@ -95,7 +98,14 @@ class Pythereum:
         return None
 
     def get_contract_state(self, cxid):
-        pass
+        for block in self.__chain[::-1]:
+            for mxid, mx in block["data"]["messages"].items():
+                if mx["to"] == cxid:
+                    return mx["data"]["reply"]
+            for ccxid, cx in block["data"]["contracts"].items():
+                if ccxid == cxid:
+                    return cx["state"]["state_vars"]
+        return None
 
     def get_block(self, block_id):
         if isinstance(block_id, int):
@@ -106,16 +116,108 @@ class Pythereum:
         return None
 
     def create_contract(self, code, public_key, private_key):
-        pass
+        signature = sign_item(private_key, code)
+        contract = Contract(code, public_key, signature)
+        self.__mempool.add_contract(contract)
 
-    def call_contract(self, cxid, gas, public_key, private_key):
-        pass
+    def call_contract(self, cxid, gas, data, public_key, private_key):
+        signature = sign_item(private_key, str(data))
+        message = Message(public_key, cxid, signature, data, gas)
+
+        contract = self.get_contract(cxid)
+        if not contract:
+            raise LookupError("Contract not found")
+        contract_state = self.get_contract_state(cxid)
+
+        compiled_contract = CompileContract(contract["code"], contract_state, sender=public_key)
+        runtime = (gas // 1000) * 0.1  # get 100 ms for every 1000 gas sent
+        if not isinstance(data, list):
+            data = [data]
+        ret_val = compiled_contract.run(runtime, *data)
+
+        message_json = message.jsonify()
+        message_json["reply"] = ret_val or contract_state
+
+        self.__mempool.add_message(message_json)
 
     def __getitem__(self, item):
         return self.get_block(item)
 
-    def __iadd__(self, other):
-        pass
+    def mine_block(self, *, n_tx=5, n_cx=5, n_mx=5):
+        transactions = self.__mempool.pop_transactions(n_tx)
+        tx_to_drop = []
+        input_total = {}  # txid => amount
+        available_utxos = {}  # user_key => [unspent, utxos]
 
-    def mine_block(self):
-        pass
+        # Validate each transaction
+        for tx in transactions:
+            t_from = tx["from"]
+            txid = tx["txid"]
+
+            if t_from not in available_utxos:
+                available_utxos[t_from] = self.get_utxo(t_from)
+            if not available_utxos[t_from]:  # No available utxos for this person
+                tx_to_drop.append(txid)
+                continue
+            elif "change_from" in tx:  # Change tx should not be in mempool
+                tx_to_drop.append(txid)
+
+            # Get transaction input total
+            input_total[txid] = 0
+            for input_txid in tx["input_txids"]:
+
+                # Cannot reuse same utxo
+                if input_txid not in available_utxos[t_from] or tx["input_txids"].count(input_txid) > 1:
+                    tx_to_drop.append(txid)
+                    break
+                i_tx = self.get_transaction(input_txid)
+                input_total[txid] += i_tx["amount"]
+            if tx_to_drop and tx_to_drop[-1] == txid:
+                continue
+            elif tx["amount"] > input_total[txid]:
+                tx_to_drop.append(txid)
+                continue
+            else:
+                for input_txid in tx["input_txids"]:
+                    available_utxos[t_from].remove(input_txid)
+
+        # Drop all invalid transactions
+        transactions[:] = [t for t in transactions if t.get("txid") not in tx_to_drop]
+        for txid in tx_to_drop:
+            if txid in input_total:
+                del input_total[txid]
+
+        # Create change Transaction
+        change_tx = []
+        for tx in transactions:
+            txid = tx["txid"]
+            if input_total[txid] > tx["amount"]:
+                # Create change transaction here
+                change_amount = input_total[txid] - tx["amount"]
+                change_tx.append({
+                    "from": tx["to"],
+                    "to": tx["from"],
+                    "time": time.time(),
+                    "amount": change_amount,
+                    "signature": "null",
+                    "input_txids": "null",
+                    "txid": hashlib.sha256(f"{tx['to']}{tx['from']}{change_amount}{time.time()}{txid}".encode()
+                                           ).hexdigest(),
+                    "change_from": txid
+                })
+            tx["amount"] = input_total[txid]
+        transactions.extend(change_tx)
+        contracts = self.__mempool.pop_contracts(n_cx)
+        messages = self.__mempool.pop_messages(n_mx)
+
+        block = Block(block_number=len(self.__chain), block_nonce=secrets.token_hex(17),
+                      previous_block_hash=self.__chain[-1]["block_hash"],
+                      transactions=transactions, contracts=contracts, messages=messages)
+
+        while not block.hash.startswith('0'*self.__difficulty):
+            block.nonce = secrets.token_hex(16)
+            block.update_time()
+            block.update_hash()
+
+        self.__chain.append(block.jsonify())
+        return block.jsonify()

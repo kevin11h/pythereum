@@ -11,22 +11,17 @@ class Transaction:
     message / notes.
     """
 
-    def __init__(self, t_from, t_to, value, signature, input_txids, txid_amount, *, data=None, change_address=None):
+    def __init__(self, t_from, t_to, value, signature, input_txids, *, data=None):
         self.__from = str(t_from)
         self.__to = str(t_to)
         self.__amount = float(value)
         self.__data = str(data)
         self.__signature = str(signature)
-        self.__txid_amount = float(txid_amount)
 
-        assert self.__txid_amount >= self.__amount, "Insufficient funds to create transaction"
         assert verify_signature(signature=self.__signature, item=f"{value}{t_from}", public_key=self.__from), \
             "Invalid Signature"
 
-        self.__need_change = self.__amount != self.__txid_amount
-
         self.__time = None
-        self.__change_address = change_address or t_from
 
         if isinstance(input_txids, list):
             self.__input_txids = [*input_txids]
@@ -35,9 +30,11 @@ class Transaction:
         else:
             self.__input_txids = []
 
-        self.__txid = hashlib.sha256(f"{self.__from}{self.__to}{self.__amount}{''.join(self.__input_txids)}".encode()
-                                     ).hexdigest()
         self.__time = time.time()
+
+        self.__txid = hashlib.sha256(f"{self.__from}{self.__to}{self.__amount}{self.__time}"
+                                     f"{''.join(self.__input_txids)}".encode()
+                                     ).hexdigest()
 
     @property
     def txid(self):
@@ -63,10 +60,6 @@ class Transaction:
     def input_txids(self):
         return self.__input_txids
 
-    @property
-    def has_change(self):
-        return self.__need_change
-
     def jsonify(self):
         return {
             "from": self.__from,
@@ -75,26 +68,9 @@ class Transaction:
             "signature": self.__signature,
             "amount": self.__amount,
             "txid": self.txid,
-            "input_txids": self.input_txids
-        } if not self.__need_change else [{
-            "from": self.__from,
-            "to": self.__to,
-            "time": self.__time,
-            "signature": self.__signature,
-            "amount": self.__txid_amount,
-            "txid": self.txid,
-            "input_txids": self.__input_txids
-        }, {
-            "from": self.__to,
-            "to": self.__change_address,
-            "change_from": self.__txid,
-            "amount": self.__txid_amount - self.__amount,
-            "time": self.__time,
-            "signature": None,
-            "txid": hashlib.sha256(f"{self.__to}{self.__change_address}{self.__txid_amount - self.__amount}"
-                                   f"{self.__time}{self.txid}".encode()).hexdigest(),
-            "input_txids": None
-        }]
+            "input_txids": self.input_txids,
+            "data": self.__data
+        }
 
 
 class Contract:
