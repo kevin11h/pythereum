@@ -9,10 +9,6 @@ from pythereum.transaction import Transaction, Contract, Message
 from pythereum.wallet import sign_item
 
 
-class BadTransactionError(Exception):
-    pass
-
-
 class Pythereum:
     def __init__(self, difficulty=4):
         self.__difficulty = int(difficulty)
@@ -41,6 +37,15 @@ class Pythereum:
     @property
     def difficulty(self):
         return self.__difficulty
+
+    def get_mempool(self, mem_type):
+        if mem_type == "transactions":
+            return self.__mempool.transactions
+        elif mem_type == "contracts":
+            return self.__mempool.contracts
+        elif mem_type == "messages":
+            return self.__mempool.messages
+        return None
 
     def send_pth(self, t_from, t_to, value, private_key, *, data=None):
         value = float(value)
@@ -72,6 +77,7 @@ class Pythereum:
         tx = Transaction(t_from=t_from, t_to=t_to, value=value, signature=signature, input_txids=utxos,
                          data=data)
         self.__mempool.add_transaction(tx)
+        return tx.jsonify()
 
     def get_transaction(self, txid):
         for block in self.__chain[::-1]:
@@ -143,6 +149,7 @@ class Pythereum:
         signature = sign_item(private_key, code)
         contract = Contract(code, public_key, signature)
         self.__mempool.add_contract(contract)
+        return contract.jsonify()
 
     def call_contract(self, cxid, gas, data, public_key, private_key):
         signature = sign_item(private_key, str(data))
@@ -165,6 +172,7 @@ class Pythereum:
         message_json["data"]["reply"] = state
 
         self.__mempool.add_message(message_json)
+        return message_json
 
     def __getitem__(self, item):
         return self.get_block(item)

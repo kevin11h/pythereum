@@ -18,6 +18,7 @@ class Transaction:
         self.__data = str(data)
         self.__signature = str(signature)
 
+        assert self.__amount > 0, "Invalid amount to send"
         assert verify_signature(signature=self.__signature, item=f"{value}{t_from}", public_key=self.__from), \
             "Invalid Signature"
 
