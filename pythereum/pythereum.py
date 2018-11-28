@@ -235,6 +235,9 @@ class Pythereum:
         transactions.extend(change_tx)
         contracts = self.__mempool.pop_contracts(n_cx)
         messages = self.__mempool.pop_messages(n_mx)
+        
+        if not transactions and not contracts and not messages:
+            return None
 
         block = Block(block_number=len(self.__chain), block_nonce=secrets.token_hex(17),
                       previous_block_hash=self.__chain[-1]["block_hash"],
