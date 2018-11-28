@@ -117,7 +117,8 @@ class Block:
             self.__merkle_mx = None
 
         self.__block_hash: str = hashlib.sha256(
-            f"{self.number}{self.time}{self.nonce}{self.previous_block_hash}".encode()
+            f"{self.number}{self.time}{self.nonce}{self.previous_block_hash}"
+            f"{self.__merkle_tx}{self.__merkle_cx}{self.__merkle_mx}".encode()
         ).hexdigest()
 
     @property
@@ -162,7 +163,8 @@ class Block:
 
     def update_hash(self):
         self.__block_hash = hashlib.sha256(
-            f"{self.number}{self.time}{self.nonce}{self.previous_block_hash}".encode()
+            f"{self.number}{self.time}{self.nonce}{self.previous_block_hash}"
+            f"{self.__merkle_tx}{self.__merkle_cx}{self.__merkle_mx}".encode()
         ).hexdigest()
 
     def merkle_root(self, mtype):
@@ -203,5 +205,6 @@ class Block:
 
     def validate(self) -> bool:
         return hashlib.sha256(
-            f"{self.number}{self.time}{self.nonce}{self.previous_block_hash}".encode()
+            f"{self.number}{self.time}{self.nonce}{self.previous_block_hash}"
+            f"{self.__merkle_tx}{self.__merkle_cx}{self.__merkle_mx}".encode()
         ).hexdigest() == self.hash

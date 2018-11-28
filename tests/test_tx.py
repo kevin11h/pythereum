@@ -31,6 +31,7 @@ print("W1:", pth.get_balance(w1["public_key"]))
 print("W2:", pth.get_balance(w2["public_key"]))
 print("W3:", pth.get_balance(w3["public_key"]))
 
-
+print("\nValidating blockchain")
+print(pth.verify_chain())
 
 
