@@ -1,3 +1,5 @@
+import ast
+
 import pythereum
 from pythereum.api.bottle import request, get, post, run
 
@@ -7,9 +9,10 @@ pth = pythereum.pythereum.Pythereum(difficulty=0)
 @get('/create_wallet')
 def create_wallet():
     seeds = request.query.decode().get("seeds", None)
-    if not seeds:
+    if seeds:
         seeds = seeds.split(",")
-    return pythereum.wallet.generate_wallet(*seeds)
+        return pythereum.wallet.generate_wallet(*seeds)
+    return pythereum.wallet.generate_wallet()
 
 
 @get('/get_difficulty')
@@ -59,7 +62,7 @@ def transaction():
 
         tx = pth.send_pth(t_from, t_to, amount, private_key)
         return {"transaction": tx}
-    except ValueError:
+    except (ValueError, TypeError):
         return {"transaction": None}
 
 
@@ -77,6 +80,26 @@ def create_contract():
         return {"contract": cx}
     except ValueError:
         return {"contract": None}
+    except Exception as e:
+        return {"contract": None, "error": str(e)}
+
+
+@post('/call_contract')
+def call_contract():
+    try:
+        cxid = request.POST.get("contract_id")
+        gas = int(request.POST.get("gas"))
+        data = request.POST.get("data")
+        public_key = request.POST.get("public_key")
+        private_key = request.POST.get("private_key")
+
+        if not cxid or not gas or not public_key or not private_key:
+            raise ValueError
+        data = ast.literal_eval(data)
+        mx = pth.call_contract(cxid, gas, data, public_key, private_key)
+        return {"message": mx}
+    except ValueError:
+        return {"message": None}
 
 
 @get('/mempool')
@@ -93,8 +116,8 @@ def mempool(mem_type=None):
 
 @post('/validate')
 def validate():
-    pass
+    return pth.verify_chain()
 
 
-def start_server():
+def start_api():
     run(host='localhost', port=8080)
