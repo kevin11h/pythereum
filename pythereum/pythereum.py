@@ -102,10 +102,12 @@ class Pythereum:
             for txid, tx in block["data"]["transactions"].items():
                 if tx["to"] == public_key:
                     utxos.append(txid)
-
-                for input_txs in tx["input_txids"]:
-                    if input_txs in utxos:
-                        utxos.remove(input_txs)
+        for block in self.__chain[::-1]:
+            for txid, tx in block["data"]["transactions"].items():
+                if tx["from"] == public_key:
+                    for input_txs in tx["input_txids"]:
+                        if input_txs in utxos:
+                            utxos.remove(input_txs)
         return utxos
 
     def get_contract(self, cxid):
